@@ -15,9 +15,11 @@
 
   .Example
     .$PROFILE
-
     ll
     cd
+    runadmin
+    connect-proxy
+    $mycreds
 
   .Notes
     Version: 1.0.1
@@ -29,14 +31,24 @@
       ~ Change
       + New Feature
       ~ moved all cmdlets to utilities.ps1
+      + moved ll, cd, run admin, connect-proxy into $profile from separate scripts.
+      ~ cleaded up spacing of the script to make easier to read. 
+      + moved dot sourcing files into $profile from seprate script. 
+      ~ added for each to dot source all files under Dependencies folder. 
+      ~ modified the checking of configuration file to ensure it is available before using and to renove redundant code. 
+      ~ modified the checking of credentials file to ensure it is available and that OS is Windows. 
+      - Remove redundant code to create credentials files. 
+      + Added feature to enable or disable Oh-My-Posh based on configuration file property. 
+      ~ modified code to allow prompt modification as a backup if Oh-My-Posh is not enabled. 
+      ~ move Oh-My-Posh dependencies files to Dependencies folder and changed paths in code. 
+      + Added file validation before dot sourcing configuration file. 
+
 #>
-
-
-
 
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Description."
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Description."
-$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
+$cancel = New-Object System.Management.Automation.Host.ChoiceDescription "&Cancel","Description."
+$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no, $cancel)
 
 #Remove alias for CD because replacement has been created Ref# function cd
 if (test-path alias:cd ) { remove-item alias:cd}
@@ -72,12 +84,9 @@ function runadmin{
 #Function to simplify connecting to proxy on a separare window. 
 function connect-proxy {
   if (Test-Connection $myConfig.myConnections.proxy -count 1){
-    #changig background to show text better when on Proxy 
-    $Host.UI.RawUI.BackgroundColor = ('DarkGreen')
-    $myArguments = myconfig.myConnections.Args
-    #Start new powershell windows with magenta background. 
+    $myArguments = $myconfig.myConnections.Args
+    #Start new powershell window.
     Start-Process -filepath "pwsh" -ArgumentList ($myArguments)
-    $Host.UI.RawUI.BackgroundColor = ('DarkMagenta')
   }
   Else {
     $eMessage=$Error[0].Exception.Message
@@ -102,7 +111,7 @@ Function createConfigFile ($Filepath) {
         notepad $FilePath | Out-Null
 
         #Let the user know where the configuration file is located. 
-        write-host "`nA new configuration file has been created:`n  $env:OneDrive/$FilePath `n"
+        write-host "`nA new configuration file has been created:`n  $env:OneDrive\$FilePath `n"
       }
 
       catch {
@@ -174,19 +183,18 @@ else {
 #Configuration File
 $configFileName = $env:COMPUTERNAME + "_config.ps1"
 
-#Check if file exitst. 
-if (test-path $configFileName) {
-  #Appending ".\" to the cofiguration name variable to be able to dot source the file as PowerShell does not load commands from the current location by default.  
-  $Dotme = ".\" + $configFileName
-  
-  #Dot source the configuraiton file to be available. 
-  . $Dotme
-}
 
-else{
+#Check if file exitst. 
+if (!(test-path $configFileName)) {
   #Call fuction to create configuraiton file when it does not exits. 
   createConfigFile $configFileName
 }
+
+#Appending ".\" to the cofiguration name variable to be able to dot source the file as PowerShell does not load commands from the current location by default.  
+$Dotme = ".\" + $configFileName
+  
+#Dot source the configuraiton file to be available. 
+If (test-path $Dotme){. $Dotme}
 
 #Dot source all the scripts on the dependencies folder. 
 Get-ChildItem -Path .\Dependencies\ -Filter *.ps1 | ForEach-Object { . $_.FullName}
@@ -201,22 +209,27 @@ Remove-Log
 Remove-transcript
 
 #Import stored credentials to variable. 
-if (test-path $myConfig.credsfile){
-   $myCreds = Import-Clixml $myConfig.credsfile
+
+#Verify file exist. 
+if (!(test-path $myConfig.credsfile) ){
+  #Verify OS is Windows as credentials are saved as secured string only on Windows. 
+  if ($IsWindows){
+    #Call fucntion to ask for creadentials and saved them to XML file as a secure string. 
+    Set-MySuperCreds
+  }
+  
+  else {
+    #Inform the user that credentials will not be saved due to security issue of credentials saving as plain text on linux and Mac OS. 
+    Write-host "The credentials cannot be saved on a secure string on a non-windows environment."
+  }
+
 }
- 
-elseif ($IsWindows) {
-  #Call fucntion to ask for creadentials and saved them to XML file as a secure string. 
-  Set-MySuperCreds
-  $myCreds = Import-Clixml $myConfig.credsfile
-} 
- 
-else {
-  Write-hoste "The credentials cannot be saved on a secure string on a non-windows environment."
-}
+
+#Import credentials into variable from file. 
+if (test-path $myConfig.credsfile){$myCreds = Import-Clixml $myConfig.credsfile}
  
 #Check if the Oh-my-posh module is installed and load configuration. 
-if (Get-Module -name oh-my-posh-core){
-  oh-my-posh --init --shell pwsh --config .\PS\atomic.omp.json| Invoke-Expression
+if ($myConfig.EnableOhMyPosh -eq "Yes"){
+  oh-my-posh --init --shell pwsh --config .\PS\Dependencies\atomic.omp.json| Invoke-Expression
   #Winget install JanDeDobbeleer.OhMyPosh or Winget_install.ps1 can be utilized to install module.
 }

@@ -31,6 +31,7 @@
             + New Feature
         1.0.2
             ~ Applied filter to get-child to get only files with desired ext and that are a # of days old
+            ~ changed static variable to $myConfig.myLogging.transcriptPath. 
 #>
 
 function Set-Transcript {
@@ -113,8 +114,7 @@ function Remove-Transcript {
     )
 
     #get all log files from folder filtering folder that are # days old and have ext .txt
-    $PSTransFolder = Join-Path $env:OneDrive -ChildPath '\psTranscripts' #Powershell\psTranscript
-    $tsFilesList = Get-ChildItem $PSTransFolder | Where-Object {($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays)) -and ($_.Extension -eq ".txt")}
+    $tsFilesList = Get-ChildItem $myConfig.myLogging.transcriptPath | Where-Object {($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays)) -and ($_.Extension -eq ".txt")}
 
     foreach ($tsFile in $tsFilesList){
 
