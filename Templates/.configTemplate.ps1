@@ -28,7 +28,9 @@
 
 $myConfig = @{
   Home = ""
-  
+
+  #Location of mycreds file for export and import
+  credsfile = $env:USERPROFILE + "\Documents"  + "\mycreds.xml"
   #sendEmail.ps1
   myEmail = @{       
       From    = ""
@@ -42,7 +44,7 @@ $myConfig = @{
   #Logging.ps1 parameters
   myLogging =@{
     RetentionDays   = "-30"
-    transcriptPath  = $env:OneDrive + "\psTranscripts"
+    transcriptPath  = $env:OneDrive + "\PSTranscripts"
     loggingPath     = $env:USERPROFILE + "\Documents\PSLogs"
 }
 #Proxy information
@@ -50,8 +52,5 @@ myConnections = @{
   Proxy = ""
   User = ""
 }
-#Location of mycreds file for export and import
-myProfile = @{
-  myProfilePath = $env:USERPROFILE + "\Documents"  + "\mycreds.xml"
-}
+
 }

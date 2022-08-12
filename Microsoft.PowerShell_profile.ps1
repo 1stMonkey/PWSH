@@ -55,7 +55,7 @@ $configFileName = $env:COMPUTERNAME + "_config.ps1"
 $configFilePath = ".\PS\" + $configFileName
 
 if ((test-path $configFilePath)) {
-  . .\PS\EF-WS1_config.ps1
+  . .\PS\Laptop_config.ps1
 }
 else{
   . .\PS\SetPSConfigFile.ps1

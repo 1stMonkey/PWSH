@@ -1,5 +1,0 @@
-Get-User | where {$_.Department -eq "Deposit Operations"} | Get-Mailbox | Set-Mailbox -ProhibitSendReceiveQuota 11GB -ProhibitSendQuota 10GB  -IssueWarningQuota 9GB 
-$user = "mpendleton@aeafcu.org"
-
-Set-Mailbox $user -ProhibitSendQuota 10GB -ProhibitSendReceiveQuota 11GB -IssueWarningQuota 7GB 
-get-mailbox $user | Select Name, *quota
