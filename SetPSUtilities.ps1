@@ -27,11 +27,11 @@
 
 #>
 
-. .\PSUtilities\SendPSEmail.ps1
-. .\PSUtilities\SetPSConnections.ps1
-. .\PSUtilities\SetPSLogging.ps1
-. .\PSUtilities\SetPSTranscript.ps1
-. .\PSUtilities\SetCredsfile.ps1
+. .\PS\SendPSEmail.ps1
+. .\PS\SetPSConnections.ps1
+. .\PS\SetPSLogging.ps1
+. .\PS\SetPSTranscript.ps1
+. .\PS\SetCredsfile.ps1
  #Remove alias for CD because replacement has been created Ref# function cd
  if (test-path alias:cd ) { remove-item alias:cd}
 

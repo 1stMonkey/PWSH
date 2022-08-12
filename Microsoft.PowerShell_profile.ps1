@@ -52,17 +52,17 @@ Return ' '
 #Check if config file exist
 
 $configFileName = $env:COMPUTERNAME + "_config.ps1"
-$configFilePath = ".\PSUtilities\" + $configFileName
+$configFilePath = ".\PS\" + $configFileName
 
 if ((test-path $configFilePath)) {
-  . .\PSUtilities\EF-WS1_config.ps1
+  . .\PS\EF-WS1_config.ps1
 }
 else{
-  . .\PSUtilities\SetPSConfigFile.ps1
+  . .\PS\SetPSConfigFile.ps1
   CreateConfig $configFilePath
   }
 #dot source utilities scripts
- . .\PSUtilities\SetPSUtilities.ps1
+ . .\PS\SetPSUtilities.ps1
 
  #Begin transcript
  write-Transcript $Today
@@ -77,8 +77,8 @@ else{
  }
  
  else {
-  . .\PSUtilities\SetCredsFile.ps1
+  . .\PS\SetCredsFile.ps1
    Set-MySuperCreds $fileName
    $myCreds = Import-Clixml $myConfig.myProfile.myProfilePath
  }
- oh-my-posh --init --shell pwsh --config .\PSUtilities\atomic.omp.json| Invoke-Expression
+ oh-my-posh --init --shell pwsh --config .\PS\atomic.omp.json| Invoke-Expression
