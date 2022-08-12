@@ -26,50 +26,40 @@
         Date Created: 20170713
 
     Changelog:
-        1.0.1
+        1.1
             ~ Change
             + New Feature
-        1.0.2
+        1.2
             ~ Applied filter to get-child to get only files with desired ext and that are a # of days old
-            ~ changed static variable to $myConfig.myLogging.transcriptPath. 
+            ~ changed static variable to $myConfig.Logging.tsPath. 
+        1.3 
+            ~ changed log files extensions from .txt to .log. 
+            ~ fixed the set-transcript module to ensure it was being called when folder didn't exitst. 
+            ~ changed to $myconfig.logging.tsPath to make it shorter and simpler.
+            ~ changed back to .txt as .log got confusing with logging. 
+
 #>
 
+#Configure folders and files to save transcript files.
 function Set-Transcript {
-       Param(
-    [Parameter (Mandatory = $true)][String]$Today
-    )
-
-    #search for OneDrive folder
-    if (Test-Path $env:OneDrive) {
-        
-        #$PSTransFolder  = Join-Path $env:OneDrive -ChildPath '\psTranscripts' #Powershell\psTranscript
-        $PSTransFolder=$myConfig.myLogging.transcriptPath
-
-        do {
-            #Check if transcript folder exist
-            if (test-path $PSTransFolder) {
-                $x=0
-                #Log the starting of transcript
-                LogToFile -message "Transcript is being written" -type Info
-        }
-
-            else {
-                #Creating PSTrancript folder because one does not exist.
-                Write-output 'Creating psTranscript folder' -ForegroundColor yellow
-                New-Item -ItemType Directory -Name 'psTranscripts' -Path $env:OneDrive
-            }
-        }
-
-        #Setting variable to 0 to exit the do loop for verification of folder.
-         until ($x -eq 0)
-    }
-
-    else {
-        Write-output "No Transcript will be recored" -ForegroundColor Red
+    #Check if folder exists. 
+    if (!(Test-Path $myConfig.Logging.tsPath)) {
+        try {
+            #Creating PSTrancript folder because one does not exist.
+            Write-host 'Creating folder to save transcript files: ' $myconfig.Logging.tsPath
+            New-Item -ItemType Directory -Path $myConfig.Logging.tsPath -ErrorAction stop
+       }
+       
+       catch {
         #log that no transcript will be recorded because OneDrive is not available.
-        LogToFile -message "OneDrive is not setup" -type Info
+        LogToFile -message "Unable to create folder to save transcripts. No transcript will be recorded. " -type Info
+                    
+        #Log error message to file
+        $errorFullName = $error[0].Exception.GetType().FullName
+        $errorDesc     = $error[0]
+        Logtofile -message "Unknown Error : $errorFullname `n$errorDesc" -type Error
+       }
     }
-
 }
 
 #Set up folders and beging writing transcript to OneDrive
@@ -77,10 +67,16 @@ function write-Transcript {
     Param(
     [Parameter (Mandatory = $true)][String]$Today
     )
-        #Form path where all Powershell items should be stored
-        $tranFileName = 'psTranscript_'+ $env:COMPUTERNAME + '_' + $Today + '_'+ $PID +'.txt' #Name of transcript file
-        $PSTransFile  = Join-Path $myConfig.myLogging.transcriptPath -ChildPath $tranFileName
+        #Form transcript file name with computer name, date and PID to create individual transcripts for each powershell process. 
+        #This will allow to record each PS window to a separate transcript files. 
+        $tranFileName = 'psTranscript_'+ $env:COMPUTERNAME + '_' + $Today + '_'+ $PID +'.txt'
 
+        $PSTransFile  = Join-Path $myConfig.Logging.tsPath -ChildPath $tranFileName
+
+        if (!(test-path $myConfig.Logging.tsPath)){
+            Set-Transcript
+        }
+            
         try {
             #Begin writing transcript
             Start-Transcript -Path ($PSTransFile) -Append -ErrorAction stop -WarningAction Continue
@@ -89,32 +85,31 @@ function write-Transcript {
             LogToFile -message "Transcript is being written" -type Info
         }
 
-        #Catch any other errors
         catch {
             #Log error message to file
             $errorFullName = $error[0].Exception.GetType().FullName
             $errorDesc     = $error[0]
             Logtofile -message "Unknown Error : $errorFullname `n$errorDesc" -type Error
-        }   
-
+            }   
+    
 }
 
 #Open transcript for review
 function get-Transcript {
-    Param(
-        [Parameter (Mandatory = $true)][String]$Today
-        )
-    code (Join-Path $env:OneDrive ('\psTranscripts\psTranscript' + $env:COMPUTERNAME + '_' + $Today + '-'+ $PID +'.txt'))
+    #Open VSCode to view the current transcript. 
+    #This assumes that VSCode is install on a Windows host. $IsWindows can be utilized to improve OS detection and opoen correct application. 
+    code (Join-Path $myConfig.Logging.tsPath -childpath ('psTranscript_'+ $env:COMPUTERNAME + '_' + $Today + '_'+ $PID +'.txt'))
 }
 
+#Function to purge transcript logs based on configured age in days from configuration file. 
 function Remove-Transcript {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Medium')]
     param(
-        [Parameter ()][Int]$numberOfDays = $myConfig.myLogging.RetentionDays
+        [Parameter ()][Int]$numberOfDays = $myConfig.Logging.RetentionDays
     )
 
     #get all log files from folder filtering folder that are # days old and have ext .txt
-    $tsFilesList = Get-ChildItem $myConfig.myLogging.transcriptPath | Where-Object {($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays)) -and ($_.Extension -eq ".txt")}
+    $tsFilesList = Get-ChildItem $myConfig.Logging.tsPath | Where-Object {($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays)) -and ($_.Extension -eq ".txt")}
 
     foreach ($tsFile in $tsFilesList){
 
