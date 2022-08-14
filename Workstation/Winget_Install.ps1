@@ -25,63 +25,60 @@
       + New Feature
 #>
 
-
-## The following four lines only need to be declared once in your script.
+#The following four lines only need to be declared once in your script.
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Description."
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Description."
 $cancel = New-Object System.Management.Automation.Host.ChoiceDescription "&Cancel","Description."
 $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no, $cancel)
-$softwareTitle = "Microsoft.PowerShell", "Microsoft.VisualStudioCode", "Git.Git","Insecure.Nmap", "Balena.Etcher", "Microsoft.PowerToys", "Adobe.Acrobat.Reader.64-bit","Microsoft.SQLServerManagementStudio", "JanDeDobbeleer.OhMyPosh","RoyalApps.RoyalTS","Microsoft.WindowsTerminal"
 
+#Import list of software from csv and assign to variable. 
+$softwareTitle =Import-csv ".\SoftwareList.csv"
 
-
-
-
-
-Function OhMy{
-  $title = "Fonts" 
-  $message = "Do you want to download font for OhMyPosh?"
-  $result = $host.ui.PromptForChoice($title, $message, $options, 1)
-  
-  switch ($result) {
-    0{
-      Invoke-WebRequest https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/JetBrainsMono.zip
-    }
-    1{
-      Write-Host "The user declined download"
-    }
-    2{
-      exit
-    }
-  }
-}
-
-
+#Function to install applications from SoftwareList.csv
 Function WingetInstallSoftware{
+  #Cycle thru all the sofware names from Softwarelist.csv asking the user if they would like it for it to be installed. 
   foreach ($App in $softwareTitle) {
     $title = "Software Installation" 
-    $message = "Do you want to install $App ?"
+    $message = "Do you want to install " + $app.name + "?"
+  
+    #Build message to be presented to user during switch. 
     $result = $host.ui.PromptForChoice($title, $message, $options, 1)
   
+    #Switch to provide the option toinstall
     switch ($result) {
       0{
-       Winget Install $App
+        if ($app.name -ne "JanDeDobbeleer.OhMyPosh"){
+          #Install software
+          Winget Install $App.name -h -s winget
+        }
+        
+        else{
+          #Oh-My-Posh requires some fonts to work properly. This will install software and download the font. 
+          $X = join-path $env:HOMEPATH -ChildPath "\Downloads\Fonts.zip"
+          Winget Install $App.name -h -s winget
+          Invoke-WebRequest "https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/JetBrainsMono.zip" -OutFile $X
+        }
+
       }
+
       1{
+        #Do not install software. 
         Write-Host "The user declined installation"
       }
+
       2{
+        #Cancel action and exit
         exit
       }
     }
   }
 }
 
+#Experimental:
 function WingetUpgradeall {
   if (Get-ScheduledTask -TaskName WingetUpgrade){
     Write-Host "Schedule task exists"
 
- 
   }
  else {
      $Mypath = '-NoLogo -NoProfile  Winget upgrade --all'
@@ -91,11 +88,6 @@ function WingetUpgradeall {
      $Task = New-ScheduledTask -Action $Action -Trigger $Trigger -Settings $Settings
      Register-ScheduledTask -TaskName 'WingetUpgrade' -InputObject $Task 
  }
-
-
-  
 }
 
-WingetUpgradeall
-OhMy
 WingetInstallSoftware

@@ -39,25 +39,26 @@
             ~ changed back to .txt as .log got confusing with logging. 
 
 #>
+#Variables to store errors. 
+$errorFullName = $error[0].Exception.GetType().FullName
+$errorDesc     = $error[0]
 
 #Configure folders and files to save transcript files.
 function Set-Transcript {
     #Check if folder exists. 
     if (!(Test-Path $myConfig.Logging.tsPath)) {
         try {
-            #Creating PSTrancript folder because one does not exist.
+            #Creating folder because one does not exist.
             Write-host 'Creating folder to save transcript files: ' $myconfig.Logging.tsPath
             New-Item -ItemType Directory -Path $myConfig.Logging.tsPath -ErrorAction stop
        }
        
        catch {
-        #log that no transcript will be recorded because OneDrive is not available.
-        LogToFile -message "Unable to create folder to save transcripts. No transcript will be recorded. " -type Info
+        #log that no transcript will be recorded because folder is not available.
+        write-output "Unable to create folder to save transcripts. No transcript will be recorded. "
                     
-        #Log error message to file
-        $errorFullName = $error[0].Exception.GetType().FullName
-        $errorDesc     = $error[0]
-        Logtofile -message "Unknown Error : $errorFullname `n$errorDesc" -type Error
+        #Add record to log file
+        add-log -message "Unable to create transcript folder. No recording will be available : $errorFullname `n$errorDesc" -type Error
        }
     }
 }
@@ -81,15 +82,13 @@ function write-Transcript {
             #Begin writing transcript
             Start-Transcript -Path ($PSTransFile) -Append -ErrorAction stop -WarningAction Continue
 
-            #Log the starting of transcript
-            LogToFile -message "Transcript is being written" -type Info
+            #Add record to log file
+            add-log -message "Transcript started, Output file is $PSTransFile" -type Info
         }
 
         catch {
-            #Log error message to file
-            $errorFullName = $error[0].Exception.GetType().FullName
-            $errorDesc     = $error[0]
-            Logtofile -message "Unknown Error : $errorFullname `n$errorDesc" -type Error
+            #Add record to log file
+            add-log -message "Unable to start transcript: $errorFullname `n$errorDesc" -type Error
             }   
     
 }
@@ -101,7 +100,7 @@ function get-Transcript {
     code (Join-Path $myConfig.Logging.tsPath -childpath ('psTranscript_'+ $env:COMPUTERNAME + '_' + $Today + '_'+ $PID +'.txt'))
 }
 
-#Function to purge transcript logs based on configured age in days from configuration file. 
+#Function to purge transcript files based on configured age in days from configuration file. 
 function Remove-Transcript {
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact='Medium')]
     param(
@@ -112,30 +111,27 @@ function Remove-Transcript {
     $tsFilesList = Get-ChildItem $myConfig.Logging.tsPath | Where-Object {($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays)) -and ($_.Extension -eq ".txt")}
 
     foreach ($tsFile in $tsFilesList){
-
         try {
             #Remove transcript file
             Remove-Item $tsFile.FullName -ErrorAction Continue -WarningAction Continue
 
             #If file no longer exist, log to file the deletion of file.
            if (!(Test-Path $tsFile.FullName)){
-                LogToFile -message "File $tsFile has been deleted." -type Info
+            #Add record to log file
+            add-log -message "File $tsFile has been deleted." -type Info
             }
         }
 
         #Catch error when file is being used by another process.
         catch [System.IO.IOException]  {
-            #Log error message to file
-            $errorFullName = $error[0].Exception.GetType().FullName
-            $errorDesc     = $error[0]
-            Logtofile -message "File was not removed possibly because it is being used: $tsFile : $errorFullname `n$errorDesc" -type Error
+            #Add record to log file
+            add-log -message "File was not removed possibly because it is being used: $tsFile : $errorFullname `n$errorDesc" -type Error
         }
+
         #Catch any other errors
         catch {
-            #Log error message to file
-            $errorFullName = $error[0].Exception.GetType().FullName
-            $errorDesc     = $error[0]
-            Logtofile -message "Unknown Error : $errorFullname `n$errorDesc" -type Error
+            #Add record to log file
+            add-log -message "Error purging transcript file $tsFile : $errorFullname `n$errorDesc" -type Error
         }
     }
 }

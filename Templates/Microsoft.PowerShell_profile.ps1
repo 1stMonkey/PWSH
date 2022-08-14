@@ -44,7 +44,7 @@
       + Added file validation before dot sourcing configuration file. 
 
 #>
-
+Write-Error "You are a Monkey!"
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Description."
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Description."
 $cancel = New-Object System.Management.Automation.Host.ChoiceDescription "&Cancel","Description."
@@ -198,7 +198,6 @@ If (test-path $Dotme){. $Dotme}
 
 #Dot source all the scripts on the dependencies folder. 
 Get-ChildItem -Path .\Dependencies\ -Filter *.ps1 | ForEach-Object { . $_.FullName}
-
 
 #Begin transcript
 $Today = get-date -Format yyyyMMdd

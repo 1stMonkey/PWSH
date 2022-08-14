@@ -36,3 +36,15 @@ param(
   [String]$anotherMandatoryParameter
 
 )
+#Variables to store errors. 
+$errorFullName = $error[0].Exception.GetType().FullName
+$errorDesc     = $error[0]
+function Get-SmallFiles {
+  param (
+      [PSDefaultValue(Help = '100')]
+      $Size = 100,
+      [switch]$on
+  )
+}
+
+Add-log -message "This is the template: `n$errorDesc $errorFullname" -type Error

@@ -33,6 +33,10 @@
       ~updated config file to include username and password. 
       ~created object to hold credentials. Get-gredentials | import-clixml doens't work. 
 #>
+#Variables to store errors. 
+$errorFullName = $error[0].Exception.GetType().FullName
+$errorDesc     = $error[0]
+
 function Send-email{
     param(
         [Parameter ()][string]$From       = $myConfig.myEmail.From,
@@ -58,15 +62,13 @@ function Send-email{
       
       #$Attachment.Dispose()
 
-      #log to file that a message has been sent.
-      Logtofile -message "Email was sent [To:$To] [Subject:$Subject] [Body:$Body]" -type info
+      #Add record to log file
+      add-log -message "Email was sent [To:$To] [Subject:$Subject] [Body:$Body]" -type info
     }
 
     #Catch any errors while sending email.
     catch {
-      #Log error message to file
-      $errorFullName = $error[0].Exception.GetType().FullName
-      $errorDesc     = $error[0]
-      Logtofile -message "Something went wrong with sending email: $errorFullname `n$errorDesc" -type Error
+      #Add record to log file
+      add-log -message "Something went wrong with sending email: $errorFullname `n$errorDesc" -type Error
     }
 }

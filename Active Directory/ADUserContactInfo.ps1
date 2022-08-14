@@ -32,6 +32,10 @@ param(
   [String]$outputpath = ".\AD_User_Contact_Info.csv"
 )
 
+#Variables to store errors. 
+$errorFullName = $error[0].Exception.GetType().FullName
+$errorDesc     = $error[0]
+
 #Get filename location and name from users
 $FileLocation = Read-Host -Prompt "Where do you want to save the file. Default name is  ADUserContactInfo.csv? "
 
@@ -39,27 +43,31 @@ $FileLocation = Read-Host -Prompt "Where do you want to save the file. Default n
 if (!$FileLocation) {$FileLocation = $outputpath}
 
 try {
-
   #Query AD for users with a title and emails like '@aeafcu.org'
-    Get-ADUser -Filter "Title -like '*' -and emailaddress -like '*@aeafcu.org'" -Properties sAMAccountName, DisplayName, EmailAddress, Title, facsimileTelephoneNumber,`
-    telephoneNumber, ipphone  |Sort-Object -property sAMAccountName| Select-Object @{name='Login ID'; expression = {$_.sAMAccountName}}, `
-    @{name='Name'; expression = {$_.DisplayName}}, @{name='Email'; expression = {$_.EmailAddress}}, Title, @{name='Fax Number'; expression = {$_.facsimileTelephoneNumber.trim("+")}}, `
-    @{Label='External Number'; Expression={$_.telephoneNumber.trim("+")}}, @{name='Extension Number'; expression = {$_.ipphone}} | Export-CSV $FileLocation 
-    
-    #open file
-    Start-Process $FileLocation
-  }
+  Get-ADUser -Filter "Title -like '*' -and emailaddress -like '*@aeafcu.org'" -Properties sAMAccountName, DisplayName, EmailAddress, Title, facsimileTelephoneNumber,`
+  telephoneNumber, ipphone  |Sort-Object -property sAMAccountName| Select-Object @{name='Login ID'; expression = {$_.sAMAccountName}}, `
+  @{name='Name'; expression = {$_.DisplayName}}, @{name='Email'; expression = {$_.EmailAddress}}, Title, @{name='Fax Number'; expression = {$_.facsimileTelephoneNumber.trim("+")}}, `
+  @{Label='External Number'; Expression={$_.telephoneNumber.trim("+")}}, @{name='Extension Number'; expression = {$_.ipphone}} | Export-CSV $FileLocation 
+}
 
+catch {
+  #Add record to log file
+  Add-log -message "Unable to query AD: `n$errorDesc $errorFullname" -type Error
+}
+
+try {
+      #open file
+      Start-Process $FileLocation
+}
 #Log error message to file if access has been denied. 
 catch [System.IO.IOException]{
-    $errorDesc     = $error[0]
-    $errorFullName = $error[0].Exception.GetType().FullName
-    write-host "`nCheck the file is not open: `n`n$errorFullname `n$errorDesc" -type Error
+  #Let the user know the file might be open. 
+  write-host "Check the file is not open: `n$errorFullname `n$errorDesc"
   }
-
 #Log error message to file any other error
 catch {
-     $errorDesc     = $error[0]
-     $errorFullName = $error[0].Exception.GetType().FullName
-     Logtofile -message "Unknown Error : `n$errorDesc $errorFullname" -type Error
+  #Add record to log file
+  Add-log -message "Unable to open file: `n$errorDesc $errorFullname" -type Error
+
+
 }

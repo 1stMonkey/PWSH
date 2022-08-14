@@ -30,12 +30,14 @@ param(
   [Parameter(Mandatory=$true)]
   [String]$ServerInstance
 )
+#Variables to store errors. 
+$errorFullName = $error[0].Exception.GetType().FullName
+$errorDesc     = $error[0]
+
 
 try {
     Invoke-Sqlcmd -Query "SELECT GETDATE() AS TimeOfQuery" -ServerInstance "MyComputer\MainInstance"
 }
 catch {
-    $errorDesc     = $error[0]
-    $errorFullName = $error[0].Exception.GetType().FullName
     Logtofile -message "Unknown Error : `n$errorDesc $errorFullname" -type Error
 }
