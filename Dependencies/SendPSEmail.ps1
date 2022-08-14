@@ -33,9 +33,34 @@
       ~updated config file to include username and password. 
       ~created object to hold credentials. Get-gredentials | import-clixml doens't work. 
 #>
-#Variables to store errors. 
-$errorFullName = $error[0].Exception.GetType().FullName
-$errorDesc     = $error[0]
+Function send-log{
+  param(
+    [Parameter(Mandatory=$true)]
+    [String]$message,
+    [Parameter(Mandatory=$true)]
+    [String]$messageType
+  )
+
+  #Check if the "add-log" fuction exist on the fuction drive to prevent using it when not available.
+  $functionList = Get-ChildItem function: | Where-Object {$_.name -eq "add-log"}
+  if ($functionList){
+    #Check if the message type is error as it requires the $error variable and atributes to log the entire message. 
+    if ($messageType -ne "Error"){
+      #Add info or waring log by calling SetPSlogging script to write log
+      add-log -message $message -type $messageType
+    }
+     
+    else{
+      #Variables to store errors. 
+      $errorFullName = $error[0].Exception.GetType().FullName
+      $errorDesc     = $error[0]
+
+      #Add error log by calling SetPSlogging script to write log
+      add-log -message "$message : $errorFullname `n$errorDesc" -type $messageType
+    }
+  }
+}
+
 
 function Send-email{
     param(
@@ -63,12 +88,12 @@ function Send-email{
       #$Attachment.Dispose()
 
       #Add record to log file
-      add-log -message "Email was sent [To:$To] [Subject:$Subject] [Body:$Body]" -type info
+      send-log -message "Email was sent [To:$To] [Subject:$Subject] [Body:$Body]" -messagetype info
     }
 
     #Catch any errors while sending email.
     catch {
       #Add record to log file
-      add-log -message "Something went wrong with sending email: $errorFullname `n$errorDesc" -type Error
+      send-log -message "Something went wrong with sending email: " -messagetype Error
     }
 }

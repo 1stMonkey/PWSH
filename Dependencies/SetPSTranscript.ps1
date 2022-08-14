@@ -39,9 +39,34 @@
             ~ changed back to .txt as .log got confusing with logging. 
 
 #>
-#Variables to store errors. 
-$errorFullName = $error[0].Exception.GetType().FullName
-$errorDesc     = $error[0]
+#Fuction to write logs. Use send-logs -message "This is the message" -messagetype (Info, Waring, Error)
+Function send-log{
+    param(
+      [Parameter(Mandatory=$true)]
+      [String]$message,
+      [Parameter(Mandatory=$true)]
+      [String]$messageType
+    )
+
+    #Check if the "add-log" fuction exist on the fuction drive to prevent using it when not available.
+    $functionList = Get-ChildItem function: | Where-Object {$_.name -eq "add-log"}
+    if ($functionList){
+      #Check if the message type is error as it requires the $error variable and atributes to log the entire message. 
+      if ($messageType -ne "Error"){
+        #Add info or waring log by calling SetPSlogging script to write log
+        add-log -message $message -type $messageType
+      }
+       
+      else{
+        #Variables to store errors. 
+        $errorFullName = $error[0].Exception.GetType().FullName
+        $errorDesc     = $error[0]
+
+        #Add error log by calling SetPSlogging script to write log
+        add-log -message "$message : $errorFullname `n$errorDesc" -type $messageType
+      }
+    }
+  }
 
 #Configure folders and files to save transcript files.
 function Set-Transcript {
@@ -58,7 +83,7 @@ function Set-Transcript {
         write-output "Unable to create folder to save transcripts. No transcript will be recorded. "
                     
         #Add record to log file
-        add-log -message "Unable to create transcript folder. No recording will be available : $errorFullname `n$errorDesc" -type Error
+        send-log -message "Unable to create transcript folder. No recording will be available : " -messagetype Error
        }
     }
 }
@@ -83,12 +108,12 @@ function write-Transcript {
             Start-Transcript -Path ($PSTransFile) -Append -ErrorAction stop -WarningAction Continue
 
             #Add record to log file
-            add-log -message "Transcript started, Output file is $PSTransFile" -type Info
+            send-log -message "Transcript started, Output file is $PSTransFile" -messagetype Info
         }
 
         catch {
             #Add record to log file
-            add-log -message "Unable to start transcript: $errorFullname `n$errorDesc" -type Error
+            send-log -message "Unable to start transcript: " -messagetype Error
             }   
     
 }
@@ -118,20 +143,20 @@ function Remove-Transcript {
             #If file no longer exist, log to file the deletion of file.
            if (!(Test-Path $tsFile.FullName)){
             #Add record to log file
-            add-log -message "File $tsFile has been deleted." -type Info
+            send-log -message "File $tsFile has been deleted." -messagetype Info
             }
         }
 
         #Catch error when file is being used by another process.
         catch [System.IO.IOException]  {
             #Add record to log file
-            add-log -message "File was not removed possibly because it is being used: $tsFile : $errorFullname `n$errorDesc" -type Error
+            send-log -message "File was not removed possibly because it is being used: $tsFile : " -messagetype Error
         }
 
         #Catch any other errors
         catch {
             #Add record to log file
-            add-log -message "Error purging transcript file $tsFile : $errorFullname `n$errorDesc" -type Error
+            send-log -message "Error purging transcript file $tsFile : $errorFullname `n$errorDesc" -messagetype Error
         }
     }
 }

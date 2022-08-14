@@ -31,10 +31,34 @@
             - removed sending logs to log folder when there is an error creating log folder. 
 
 #>
-#Variables to store errors. 
-$errorFullName = $error[0].Exception.GetType().FullName
-$errorDesc     = $error[0]
-
+Function send-log{
+    param(
+      [Parameter(Mandatory=$true)]
+      [String]$message,
+      [Parameter(Mandatory=$true)]
+      [String]$messageType
+    )
+  
+    #Check if the "add-log" fuction exist on the fuction drive to prevent using it when not available.
+    $functionList = Get-ChildItem function: | Where-Object {$_.name -eq "add-log"}
+    if ($functionList){
+      #Check if the message type is error as it requires the $error variable and atributes to log the entire message. 
+      if ($messageType -ne "Error"){
+        #Add info or waring log by calling SetPSlogging script to write log
+        add-log -message $message -type $messageType
+      }
+       
+      else{
+        #Variables to store errors. 
+        $errorFullName = $error[0].Exception.GetType().FullName
+        $errorDesc     = $error[0]
+  
+        #Add error log by calling SetPSlogging script to write log
+        add-log -message "$message : $errorFullname `n$errorDesc" -type $messageType
+      }
+    }
+  }
+  
 #Function to create folder to save log files. 
 function Set-Logging{
     Write-host "Setting up logging. "
@@ -108,7 +132,7 @@ function add-log () {
     $LogFileName = 'log' + $Today + '.txt' #Name of transcript file
     
     #Build the message to be sent to log. 
-    $output = "[$date][$type][$functionCall][$line]: $message Other"
+    $output = "[$date][$type][$functionCall][$line]: $message"
 
     try{
         #Write message to log file. 
@@ -148,20 +172,20 @@ function Remove-log {
             #If file no longer exist, log to file the deletion of the file. 
             if (!(Test-Path $logFile.FullName)){
                 #Add record to log file
-                add-log -message "File $logFile has been deleted." -type Info    
+                send-log -message "File $logFile has been deleted." -messagetype Info    
             }
         }
 
         #Catch error when file is being used by another process. 
         catch [System.IO.IOException]  {
             #Add record to log file
-            add-log -message "File was not removed possibly because it is being used: $logFile : $errorFullname `n$errorDesc" -type Error 
+            send-log -message "File was not removed possibly because it is being used: $logFile : " -messagetype Error 
         }
 
         #Catch any other errors. 
         catch {
             #Add record to log file
-            add-log -message "$errorFullname `n$errorDesc" -type Error
+            send-log -message "Something went wrong. " -messagetype Error
         }
     }
 }
