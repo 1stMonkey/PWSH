@@ -29,8 +29,8 @@
 param(
   [Parameter(Mandatory=$true)]
   [String]$Path,
-  [Parameter(Mandatory=$true)]
-  [String]$fileExt,
+  [String]$fileName =".",
+  [String]$fileExt =".",
   [Parameter(Mandatory=$true)]
   [Int32]$numberOfDays
 )
@@ -78,7 +78,7 @@ Process {
   $deletedfiles= @()
 
   #Get list of file from the specified path that matches age and extension. 
-  $fileList = Get-ChildItem -Path $Path | Where-Object {($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays))  -and ($_.Extension -eq $fileExt)}
+  $fileList = Get-ChildItem -Path $Path | Where-Object {($_.Name -match $filename) -and ($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays))  -and ($_.Extension -match $fileExt)}
  
   #Cycle thrue the files one at a time to delete them. 
   foreach ($file in $filelist){
