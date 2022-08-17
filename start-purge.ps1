@@ -12,7 +12,7 @@
     output
 
   .Example
-    example
+    start-purge.ps1 -Path "C:\test\"  -numberOfDays 0 -fileName "\d"
 
   .Notes
     Version: 1.0
@@ -78,17 +78,21 @@ Process {
   $deletedfiles= @()
 
   #Get list of file from the specified path that matches age and extension. 
-  $fileList = Get-ChildItem -Path $Path | Where-Object {($_.Name -match $filename) -and ($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays))  -and ($_.Extension -match $fileExt)}
+  $fileList = Get-ChildItem -Path $Path | Where-Object {($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays))}#($_.Name -match $filename) -and ($_.LastWriteTime -lt (Get-Date).AddDays($numberOfDays))  -and ($_.Extension -match $fileExt)}
  
+  #Exit the script if there are no files. 
+  If (!($fileList)) {exit}
+
   #Cycle thrue the files one at a time to delete them. 
   foreach ($file in $filelist){
+    
     try {
         #Remove file.
-        Remove-Item $File.FullName -ErrorAction Continue -WarningAction Continue -WhatIf
+        Remove-Item $file.FullName -ErrorAction Continue -WarningAction Continue 
     }
     
     #Catch error when file is being used by another process.
-    catch [System.IO.IOException]  {
+    catch [System.IO.IOExcption]  {
       #Add record to log file
       add-log -message "File was not removed possibly because it is being used: $tsFile : $errorFullname `n$errorDesc" -type Error
     }
@@ -100,8 +104,9 @@ Process {
     }
 
     finally{
+      
       #If file no longer exist, log to file the deletion of file.
-      if ((Test-Path $file.FullName)){
+      if (!(Test-Path $file)){
         #Add record to log file
         send-log -message "File $file has been deleted." -messagetype Info
         $deletedfiles += $file
@@ -113,6 +118,6 @@ Process {
 end {
   #Output the count and list of names of the files deleted. 
   Write-host "These are the deleted files `n"
-  $deletedfiles
+  $deletedfiles | Select-Object Name, Length, LastWriteTime | Format-Table
   $deletedfiles |Measure-Object | Select-Object Count
 }

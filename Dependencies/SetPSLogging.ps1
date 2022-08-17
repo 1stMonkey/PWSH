@@ -54,7 +54,7 @@ Function send-log{
         $errorDesc     = $error[0]
   
         #Add error log by calling SetPSlogging script to write log
-        add-log -message "$message : $errorFullname `n$errorDesc" -type $messageType
+        add-log -message "$message : $errorFullname $errorDesc" -type $messageType
       }
     }
   }

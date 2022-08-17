@@ -44,7 +44,6 @@
       + Added file validation before dot sourcing configuration file. 
 
 #>
-Write-Error "You are a Monkey!"
 $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes","Description."
 $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No","Description."
 $cancel = New-Object System.Management.Automation.Host.ChoiceDescription "&Cancel","Description."
@@ -204,9 +203,8 @@ $Today = get-date -Format yyyyMMdd
 write-Transcript $Today
 
 #Purge logs and transcript files of a given age in days. Retention is managed from configuraiton file. 
-Remove-Log
-Remove-transcript
-
+./start-purge.ps1 -Path $myconfig.Logging.lPath  -numberOfDays $myconfig.Logging.RetentionDays
+./start-purge.ps1 -Path $myconfig.Logging.tsPath  -numberOfDays $myconfig.Logging.RetentionDays
 #Import stored credentials to variable. 
 
 #Verify file exist. 
