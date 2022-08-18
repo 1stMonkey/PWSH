@@ -13,3 +13,4 @@ Set Up
 3. Copy Microsoft.Powershell_profile.ps1 to "C:\Users\<User>\OneDrive\Documents\PowerShell"
 4. Open Powershell Core
 5. Modify configuration file created after opening PS Core. 
+6. Thank the programmer. 
