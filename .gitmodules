@@ -1,0 +1,6 @@
+[submodule "AD_PS"]
+	path = AD_PS
+	url = https://github.com/1stMonkey/AD_PS.git
+[submodule "GP_PS"]
+	path = GP_PS
+	url = https://github.com/1stMonkey/GP_PS.git
